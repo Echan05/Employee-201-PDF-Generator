@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Employee 201 File</title>
+<style>
+    @page {
+        size: 8.5in 14in; /* Legal / Long Bond Paper, confirmed requirement */
+        margin: 0.5in 0.4in;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9.5pt;
+        color: #000;
+        margin: 0 auto;
+        width: 7.6in; /* 8.5in page minus 0.4in left/right margins from @page */
+        max-width: 7.6in;
+    }
+
+    .page {
+        page-break-after: always;
+    }
+    .page:last-child {
+        page-break-after: avoid;
+    }
+
+    .outer-box {
+        border: 2px solid #000;
+        padding: 8px;
+    }
+
+    .header-text {
+        text-align: center;
+        font-weight: bold;
+        font-size: 14pt;
+    }
+    .header-sub {
+        font-size: 8pt;
+        font-weight: normal;
+        text-align: center;
+    }
+    .title-bar {
+        text-align: center;
+        font-weight: bold;
+        font-size: 11pt;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 3px 0;
+        margin: 6px 0;
+    }
+    .section-title {
+        font-weight: bold;
+        text-align: center;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 2px 0;
+        margin: 6px 0 4px 0;
+    }
+
+    /* ---- Inline label:value line (the corrected pattern) ---- */
+    .line {
+        margin-bottom: 4px;
+        line-height: 1.5;
+    }
+    .line .lbl {
+        font-weight: bold;
+    }
+    .line .val {
+        border-bottom: 1px solid #000;
+        padding: 0 3px;
+        display: inline-block;
+        min-width: 120px;
+    }
+    .line .val.wide {
+        min-width: 220px;
+    }
+    .line .val.name {
+        min-width: 150px;
+    }
+    .name-group {
+        display: inline-block;
+        text-align: left;
+        margin-right: 12px;
+    }
+    .name-group .val {
+        display: block;
+    }
+    .name-group .caption {
+        font-size: 7.5pt;
+        font-weight: normal;
+        display: block;
+    }
+    .line .val.full {
+        display: block;
+        width: 100%;
+        margin-top: 1px;
+    }
+
+    /* ---- Data tables (dependents, education, employment, training) ---- */
+    table.data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+    }
+    table.data-table th,
+    table.data-table td {
+        border: 1px solid #000;
+        padding: 3px 4px;
+        font-size: 8.5pt;
+        text-align: left;
+        vertical-align: top;
+    }
+    table.data-table th {
+        font-weight: bold;
+        text-align: center;
+        background-color: #f0f0f0;
+    }
+    table.data-table tr {
+        page-break-inside: avoid;
+    }
+    .group-label-cell {
+        font-weight: bold;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .empty-note {
+        font-style: italic;
+        color: #666;
+        font-size: 8pt;
+        padding: 4px;
+    }
+</style>
+</head>
+<body>
+
+{% macro blank(value) -%}
+{{ value if value is not none else "" }}
+{%- endmacro %}
+
+<!-- =========================== PAGE 1 =========================== -->
+<div class="page">
+<div class="outer-box">
+
+    <div class="header-text">
+        EMPLOYEE 201 FILE
+        <div class="header-sub">Consolidated Matrix Inc. (CMI)</div>
+    </div>
+
+    <div class="title-bar">PERSONAL INFORMATION</div>
+
+    <div class="line">
+        <span class="lbl">Name:</span>
+        <span class="name-group">
+            <span class="val name">{{ primary.rm_lastname }}</span>
+            <span class="caption">(Last Name)</span>
+        </span>
+        <span class="name-group">
+            <span class="val name">{{ primary.rm_first_name }}</span>
+            <span class="caption">(First Name)</span>
+        </span>
+        <span class="name-group">
+            <span class="val" style="min-width:60px;">{{ blank(primary.rm_other_name) }}</span>
+            <span class="caption">(Jr./III)</span>
+        </span>
+        <span class="name-group">
+            <span class="val name">{{ blank(primary.rm_middle_name) }}</span>
+            <span class="caption">(Middle Name)</span>
+        </span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Sex:</span>
+        <span class="val">{{ blank(primary.rm_gender) }}</span>
+        <span class="lbl">Civil Status:</span>
+        <span class="val">{{ blank(primary.rm_civiil_status) }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Religion:</span>
+        <span class="val wide">{{ blank(primary.rm_religion) }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Height:</span>
+        <span class="val">{{ blank(primary.rm_height) }}</span>
+        <span class="lbl">Weight:</span>
+        <span class="val">{{ blank(primary.rm_weight) }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Father's Name:</span>
+        <span class="val wide">{{ blank(father.fam_name) if father else "" }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Mother's Name:</span>
+        <span class="val wide">{{ blank(mother.fam_name) if mother else "" }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Spouse Name:</span>
+        <span class="val wide">{{ blank(spouse.fam_name) if spouse else "" }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Occupation:</span>
+        <span class="val wide">{{ blank(spouse.fam_ocu) if spouse else "" }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">City/Permanent Address:</span>
+        <span class="val full">{{ blank(primary.cur_street) }} {{ blank(primary.cur_subd) }} {{ blank(primary.cur_town) }} {{ blank(primary.cur_prov) }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Telephone No.:</span>
+        <span class="val">{{ blank(primary.rm_contact_no) }}</span>
+        <span class="lbl">Zip Code:</span>
+        <span class="val">{{ blank(primary.cur_zip) }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Provincial Address:</span>
+        <span class="val full">{{ blank(primary.prov_street) }} {{ blank(primary.prov_subd) }} {{ blank(primary.prov_town) }} {{ blank(primary.prov_prov) }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Zip Code:</span>
+        <span class="val">{{ blank(primary.prov_zip) }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Person to Notify in Case of Emergency:</span>
+        <span class="val wide">{{ blank(primary.rm_incase_contact) }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Address:</span>
+        <span class="val full">{{ blank(primary.rm_incase_add) }}</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Relationship:</span>
+        <span class="val">{{ blank(primary.rm_incase_rela) }}</span>
+        <span class="lbl">Telephone No.:</span>
+        <span class="val">{{ blank(primary.rm_incace_contactno) }}</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">SSS No.:</span>
+        <span class="val">{{ blank(primary.rm_sss_no) }}</span>
+        <span class="lbl">Pag-Ibig No.:</span>
+        <span class="val">{{ blank(primary.rm_pagibig_no) }}</span>
+        <span class="lbl">TIN No.:</span>
+        <span class="val">{{ blank(primary.rm_tin) }}</span>
+    </div>
+
+    <div class="section-title">LIST OF DEPENDENTS/BENEFICIARIES (include immediate relatives only)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:40%">Name</th>
+                <th style="width:35%">Relationship</th>
+                <th style="width:25%">Date of Birth</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dep in parents %}
+            <tr>
+                <td>{{ blank(dep.fam_name) }}</td>
+                <td>{{ blank(dep.fam_rela) }}</td>
+                <td>&nbsp;</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="empty-note">No dependents/beneficiaries on file.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+</div>
+
+<!-- =========================== PAGE 2 =========================== -->
+<div class="page">
+<div class="outer-box">
+
+    <div class="section-title">EDUCATIONAL BACKGROUND</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:15%">Level</th>
+                <th style="width:40%">Name of School</th>
+                <th style="width:25%">Course</th>
+                <th style="width:20%">Date Graduated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for level_label, group in education_grouped %}
+                {% for rec in group %}
+                <tr>
+                    {% if loop.first %}
+                    <td class="group-label-cell" rowspan="{{ group|length }}">{{ level_label }}</td>
+                    {% endif %}
+                    <td>{{ blank(rec.edu_school) }}</td>
+                    <td>{{ blank(rec.edu_course) }}</td>
+                    <td>{{ blank(rec.edu_year) }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr><td colspan="4" class="empty-note">No educational background on file.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">TRAININGS/SEMINARS ATTENDED</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:20%">From</th>
+                <th style="width:20%">To</th>
+                <th style="width:35%">Course</th>
+                <th style="width:25%">Training School Attended</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in training %}
+            <tr>
+                <td>{{ blank(t.training_sdate) }}</td>
+                <td>{{ blank(t.training_edate) }}</td>
+                <td>{{ blank(t.training_course) }}</td>
+                <td>{{ blank(t.traning_school) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="empty-note">No trainings/seminars on file.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">EMPLOYMENT HISTORY</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:15%">From</th>
+                <th style="width:15%">To</th>
+                <th style="width:35%">Company/Agency</th>
+                <th style="width:35%">Position</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in employment %}
+            <tr>
+                <td>{{ blank(e.history_sdate) }}</td>
+                <td>{{ blank(e.history_edate) }}</td>
+                <td>{{ blank(e.history_company) }}</td>
+                <td>{{ blank(e.history_position) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="empty-note">No employment history on file.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+</div>
+
+</body>
+</html>

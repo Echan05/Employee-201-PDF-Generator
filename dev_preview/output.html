@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Employee 201 File</title>
+<style>
+    @page {
+        size: 8.5in 14in; /* Legal / Long Bond Paper, confirmed requirement */
+        margin: 0.5in 0.4in;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9.5pt;
+        color: #000;
+        margin: 0 auto;
+        width: 7.6in; /* 8.5in page minus 0.4in left/right margins from @page */
+        max-width: 7.6in;
+    }
+
+    .page {
+        page-break-after: always;
+    }
+    .page:last-child {
+        page-break-after: avoid;
+    }
+
+    .outer-box {
+        border: 2px solid #000;
+        padding: 8px;
+    }
+
+    .header-text {
+        text-align: center;
+        font-weight: bold;
+        font-size: 14pt;
+    }
+    .header-sub {
+        font-size: 8pt;
+        font-weight: normal;
+        text-align: center;
+    }
+    .title-bar {
+        text-align: center;
+        font-weight: bold;
+        font-size: 11pt;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 3px 0;
+        margin: 6px 0;
+    }
+    .section-title {
+        font-weight: bold;
+        text-align: center;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 2px 0;
+        margin: 6px 0 4px 0;
+    }
+
+    /* ---- Inline label:value line (the corrected pattern) ---- */
+    .line {
+        margin-bottom: 4px;
+        line-height: 1.5;
+    }
+    .line .lbl {
+        font-weight: bold;
+    }
+    .line .val {
+        border-bottom: 1px solid #000;
+        padding: 0 3px;
+        display: inline-block;
+        min-width: 120px;
+    }
+    .line .val.wide {
+        min-width: 220px;
+    }
+    .line .val.name {
+        min-width: 150px;
+    }
+    .name-group {
+        display: inline-block;
+        text-align: left;
+        margin-right: 12px;
+    }
+    .name-group .val {
+        display: block;
+    }
+    .name-group .caption {
+        font-size: 7.5pt;
+        font-weight: normal;
+        display: block;
+    }
+    .line .val.full {
+        display: block;
+        width: 100%;
+        margin-top: 1px;
+    }
+
+    /* ---- Data tables (dependents, education, employment, training) ---- */
+    table.data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+    }
+    table.data-table th,
+    table.data-table td {
+        border: 1px solid #000;
+        padding: 3px 4px;
+        font-size: 8.5pt;
+        text-align: left;
+        vertical-align: top;
+    }
+    table.data-table th {
+        font-weight: bold;
+        text-align: center;
+        background-color: #f0f0f0;
+    }
+    table.data-table tr {
+        page-break-inside: avoid;
+    }
+    .group-label-cell {
+        font-weight: bold;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .empty-note {
+        font-style: italic;
+        color: #666;
+        font-size: 8pt;
+        padding: 4px;
+    }
+</style>
+</head>
+<body>
+
+
+
+<!-- =========================== PAGE 1 =========================== -->
+<div class="page">
+<div class="outer-box">
+
+    <div class="header-text">
+        EMPLOYEE 201 FILE
+        <div class="header-sub">Consolidated Matrix Inc. (CMI)</div>
+    </div>
+
+    <div class="title-bar">PERSONAL INFORMATION</div>
+
+    <div class="line">
+        <span class="lbl">Name:</span>
+        <span class="name-group">
+            <span class="val name">CADORNA</span>
+            <span class="caption">(Last Name)</span>
+        </span>
+        <span class="name-group">
+            <span class="val name">LEONIDEZ</span>
+            <span class="caption">(First Name)</span>
+        </span>
+        <span class="name-group">
+            <span class="val" style="min-width:60px;"></span>
+            <span class="caption">(Jr./III)</span>
+        </span>
+        <span class="name-group">
+            <span class="val name">AGUILAR</span>
+            <span class="caption">(Middle Name)</span>
+        </span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Sex:</span>
+        <span class="val">MALE</span>
+        <span class="lbl">Civil Status:</span>
+        <span class="val">SINGLE</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Religion:</span>
+        <span class="val wide">ROMAN CATHOLIC</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Height:</span>
+        <span class="val">5'7"</span>
+        <span class="lbl">Weight:</span>
+        <span class="val">160</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Father's Name:</span>
+        <span class="val wide">FRANCISCO CADORNA</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Mother's Name:</span>
+        <span class="val wide">JINKY CADORNA</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Spouse Name:</span>
+        <span class="val wide">ANALYN CADORNA</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Occupation:</span>
+        <span class="val wide">NURSE</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">City/Permanent Address:</span>
+        <span class="val full">MALINIS COMPOUND BANCAL CARMONA CAVITE</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Telephone No.:</span>
+        <span class="val">09569061903</span>
+        <span class="lbl">Zip Code:</span>
+        <span class="val">4116</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Provincial Address:</span>
+        <span class="val full">   </span>
+    </div>
+    <div class="line">
+        <span class="lbl">Zip Code:</span>
+        <span class="val"></span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">Person to Notify in Case of Emergency:</span>
+        <span class="val wide">JAMA AGUILAR</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Address:</span>
+        <span class="val full">SA</span>
+    </div>
+    <div class="line">
+        <span class="lbl">Relationship:</span>
+        <span class="val"></span>
+        <span class="lbl">Telephone No.:</span>
+        <span class="val">09950498287</span>
+    </div>
+
+    <div class="line">
+        <span class="lbl">SSS No.:</span>
+        <span class="val">0423740808</span>
+        <span class="lbl">Pag-Ibig No.:</span>
+        <span class="val">121108917938</span>
+        <span class="lbl">TIN No.:</span>
+        <span class="val"></span>
+    </div>
+
+    <div class="section-title">LIST OF DEPENDENTS/BENEFICIARIES (include immediate relatives only)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:40%">Name</th>
+                <th style="width:35%">Relationship</th>
+                <th style="width:25%">Date of Birth</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr>
+                <td>FRANCISCO CADORNA</td>
+                <td>FATHER</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td>JINKY CADORNA</td>
+                <td>MOTHER</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td>MARICEL CADORNA</td>
+                <td>SIBLINGS</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td>JOSE CADORNA</td>
+                <td>SIBLINGS</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td>ANALYN CADORNA</td>
+                <td>SPOUSE</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td>MIGUEL CADORNA</td>
+                <td>CHILDREN</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+        </tbody>
+    </table>
+
+</div>
+</div>
+
+<!-- =========================== PAGE 2 =========================== -->
+<div class="page">
+<div class="outer-box">
+
+    <div class="section-title">EDUCATIONAL BACKGROUND</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:15%">Level</th>
+                <th style="width:40%">Name of School</th>
+                <th style="width:25%">Course</th>
+                <th style="width:20%">Date Graduated</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                
+                <tr>
+                    
+                    <td class="group-label-cell" rowspan="2">HIGH SCHOOL</td>
+                    
+                    <td>COMMONWEALTH HIGH SCHOOL</td>
+                    <td></td>
+                    <td>2013-2015</td>
+                </tr>
+                
+                <tr>
+                    
+                    <td>BEST LINK COLLEGE OF THE PHILIPPINES (SHS)</td>
+                    <td></td>
+                    <td>2015-2017</td>
+                </tr>
+                
+            
+                
+                <tr>
+                    
+                    <td class="group-label-cell" rowspan="1">COLLEGE</td>
+                    
+                    <td>ASIAN INSTITUTE OF SCIENCE AND TECH</td>
+                    <td>ACCOUNTANCY</td>
+                    <td>UNDERGRADUATE</td>
+                </tr>
+                
+            
+        </tbody>
+    </table>
+
+    <div class="section-title">TRAININGS/SEMINARS ATTENDED</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:20%">From</th>
+                <th style="width:20%">To</th>
+                <th style="width:35%">Course</th>
+                <th style="width:25%">Training School Attended</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr>
+                <td>2025-08-14</td>
+                <td>2025-08-16</td>
+                <td>ENHANCEMENT TRAINING PROGRAM</td>
+                <td>COUGAR SEC AGENCY</td>
+            </tr>
+            
+            <tr>
+                <td>2021-08-18</td>
+                <td>2021-08-22</td>
+                <td>REFRESHER TRAINING PROGRAM</td>
+                <td>COUGAR SEC AGENCY</td>
+            </tr>
+            
+        </tbody>
+    </table>
+
+    <div class="section-title">EMPLOYMENT HISTORY</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:15%">From</th>
+                <th style="width:15%">To</th>
+                <th style="width:35%">Company/Agency</th>
+                <th style="width:35%">Position</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr>
+                <td>2023-02-22</td>
+                <td>2023-05-10</td>
+                <td>ASIA PACIFIC AND COSMETIC PRODUCT</td>
+                <td>PROMODISER</td>
+            </tr>
+            
+            <tr>
+                <td>2023-09-16</td>
+                <td>2023-12-21</td>
+                <td>GUARDHOUSE SECURITY AGENCY</td>
+                <td>SECURITY GUARD</td>
+            </tr>
+            
+        </tbody>
+    </table>
+
+</div>
+</div>
+
+</body>
+</html>
