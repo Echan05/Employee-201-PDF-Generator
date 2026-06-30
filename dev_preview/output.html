@@ -54,16 +54,62 @@
     .section-title {
         font-weight: bold;
         text-align: center;
-        border-top: 1px solid #000;
+        border-top: 2px solid #000;
         border-bottom: 1px solid #000;
         padding: 2px 0;
         margin: 6px 0 4px 0;
+    }
+
+    /* ---- Divider between sub-sections of Personal Information ---- */
+    .divider {
+        border-top: 2px solid #000;
+        margin: 8px 0;
+    }
+
+    /* ---- Outer two-column block: left = employee details, right = mobile/email ---- */
+    .two-col {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+    .two-col .col-left {
+        display: table-cell;
+        width: 62%;
+        vertical-align: top;
+        border-right: 1px solid #000;
+        padding-right: 10px;
+    }
+    .two-col .col-right {
+        display: table-cell;
+        width: 38%;
+        vertical-align: top;
+        padding-left: 10px;
+    }
+
+    /* ---- Generic 2-column sub-grid (used for Sex/Civil Status/Height/Weight AND the ID numbers) ---- */
+    .sub-grid {
+        display: table;
+        width: 100%;
+        margin-bottom: 2px;
+    }
+    .sub-grid .sub-col {
+        display: table-cell;
+        width: 50%;
+        vertical-align: top;
+    }
+    .sub-grid .sub-col.left {
+        border-right: 1px solid #000;
+        padding-right: 8px;
+    }
+    .sub-grid .sub-col.right {
+        padding-left: 8px;
     }
 
     /* ---- Inline label:value line (the corrected pattern) ---- */
     .line {
         margin-bottom: 4px;
         line-height: 1.5;
+        white-space: nowrap;
     }
     .line .lbl {
         font-weight: bold;
@@ -72,31 +118,41 @@
         border-bottom: 1px solid #000;
         padding: 0 3px;
         display: inline-block;
-        min-width: 120px;
+        min-width: 80px;
+        text-align: left;
     }
     .line .val.wide {
-        min-width: 220px;
+        min-width: 150px;
     }
     .line .val.name {
         min-width: 150px;
     }
     .name-group {
         display: inline-block;
-        text-align: left;
+        vertical-align: top;
+        text-align: center;
         margin-right: 12px;
     }
     .name-group .val {
         display: block;
+        height: 1.3em;
+        text-align: center;
+        line-height: 1.3em;
+        overflow: hidden;
     }
     .name-group .caption {
         font-size: 7.5pt;
         font-weight: normal;
         display: block;
+        text-align: center;
     }
     .line .val.full {
         display: block;
         width: 100%;
         margin-top: 1px;
+        white-space: normal;
+        min-height: 1.3em;
+        line-height: 1.3em;
     }
 
     /* ---- Data tables (dependents, education, employment, training) ---- */
@@ -149,8 +205,8 @@
 
     <div class="title-bar">PERSONAL INFORMATION</div>
 
-    <div class="line">
-        <span class="lbl">Name:</span>
+    <div class="line" style="white-space:normal;">
+        <span class="lbl" style="display:inline-block; vertical-align:top;">Name:</span>
         <span class="name-group">
             <span class="val name">CADORNA</span>
             <span class="caption">(Last Name)</span>
@@ -169,54 +225,106 @@
         </span>
     </div>
 
-    <div class="line">
-        <span class="lbl">Sex:</span>
-        <span class="val">MALE</span>
-        <span class="lbl">Civil Status:</span>
-        <span class="val">SINGLE</span>
+    <div class="two-col">
+        <div class="col-left">
+
+            <div class="sub-grid">
+                <div class="sub-col left">
+                    <div class="line">
+                        <span class="lbl">Sex:</span>
+                        <span class="val">MALE</span>
+                    </div>
+                    <div class="line">
+                        <span class="lbl">Height:</span>
+                        <span class="val">5'7"</span>
+                    </div>
+                </div>
+                <div class="sub-col right">
+                    <div class="line">
+                        <span class="lbl">Civil Status:</span>
+                        <span class="val">SINGLE</span>
+                    </div>
+                    <div class="line">
+                        <span class="lbl">Weight:</span>
+                        <span class="val">160</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="line" style="white-space:normal;">
+                <span class="lbl">Religion:</span>
+                <span class="val wide">ROMAN CATHOLIC</span>
+            </div>
+
+            <div class="sub-grid">
+                <div class="sub-col left">
+                    <div class="line">
+                        <span class="lbl">SSS No.:</span>
+                        <span class="val">0423740808</span>
+                    </div>
+                    <div class="line">
+                        <span class="lbl">TIN No.:</span>
+                        <span class="val"></span>
+                    </div>
+                </div>
+                <div class="sub-col right">
+                    <div class="line">
+                        <span class="lbl">PhilHealth No.:</span>
+                        <span class="val">080256482952</span>
+                    </div>
+                    <div class="line">
+                        <span class="lbl">Pag-Ibig No.:</span>
+                        <span class="val">121108917938</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-right">
+            <div class="line">
+                <span class="lbl">Mobile Number:</span>
+                <span class="val">09569061903</span>
+            </div>
+            <div class="line">
+                <span class="lbl">Email Address:</span>
+                <span class="val"></span>
+            </div>
+        </div>
     </div>
 
-    <div class="line">
-        <span class="lbl">Religion:</span>
-        <span class="val wide">ROMAN CATHOLIC</span>
-    </div>
+    <div class="divider"></div>
 
-    <div class="line">
-        <span class="lbl">Height:</span>
-        <span class="val">5'7"</span>
-        <span class="lbl">Weight:</span>
-        <span class="val">160</span>
-    </div>
-
-    <div class="line">
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Father's Name:</span>
         <span class="val wide">FRANCISCO CADORNA</span>
     </div>
-    <div class="line">
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Mother's Name:</span>
         <span class="val wide">JINKY CADORNA</span>
     </div>
-    <div class="line">
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Spouse Name:</span>
         <span class="val wide">ANALYN CADORNA</span>
     </div>
-    <div class="line">
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Occupation:</span>
         <span class="val wide">NURSE</span>
     </div>
 
-    <div class="line">
-        <span class="lbl">City/Permanent Address:</span>
+    <div class="divider"></div>
+
+    <div class="line" style="white-space:normal;">
+        <span class="lbl">Current Address:</span>
         <span class="val full">MALINIS COMPOUND BANCAL CARMONA CAVITE</span>
     </div>
     <div class="line">
-        <span class="lbl">Telephone No.:</span>
-        <span class="val">09569061903</span>
         <span class="lbl">Zip Code:</span>
         <span class="val">4116</span>
     </div>
 
-    <div class="line">
+    <div class="divider"></div>
+
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Provincial Address:</span>
         <span class="val full">   </span>
     </div>
@@ -225,11 +333,13 @@
         <span class="val"></span>
     </div>
 
-    <div class="line">
+    <div class="divider"></div>
+
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Person to Notify in Case of Emergency:</span>
         <span class="val wide">JAMA AGUILAR</span>
     </div>
-    <div class="line">
+    <div class="line" style="white-space:normal;">
         <span class="lbl">Address:</span>
         <span class="val full">SA</span>
     </div>
@@ -238,15 +348,6 @@
         <span class="val"></span>
         <span class="lbl">Telephone No.:</span>
         <span class="val">09950498287</span>
-    </div>
-
-    <div class="line">
-        <span class="lbl">SSS No.:</span>
-        <span class="val">0423740808</span>
-        <span class="lbl">Pag-Ibig No.:</span>
-        <span class="val">121108917938</span>
-        <span class="lbl">TIN No.:</span>
-        <span class="val"></span>
     </div>
 
     <div class="section-title">LIST OF DEPENDENTS/BENEFICIARIES (include immediate relatives only)</div>
