@@ -83,14 +83,15 @@ class PrimaryEmployeeRecord(BaseModel):
     valid_id_image_rear: NoneIfBlank = None
     heath_card_image: NoneIfBlank = None  # NOTE: typo "heath" is in the live API field name, kept as-is
     hcb_image: NoneIfBlank = None
+    pag_image: NoneIfBlank = None
     ph_image: NoneIfBlank = None
     nbi_image: NoneIfBlank = None
     ub_image: NoneIfBlank = None
 
     @field_validator(
         "gcash_image", "sss_image", "drug_test_image", "valid_id_image",
-        "valid_id_image_rear", "heath_card_image", "hcb_image", "ph_image",
-        "nbi_image", "ub_image",
+        "valid_id_image_rear", "heath_card_image", "hcb_image", "pag_image",
+        "ph_image", "nbi_image", "ub_image",
         mode="before",
     )
     @classmethod

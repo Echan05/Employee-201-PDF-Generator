@@ -5,7 +5,7 @@
 <title>Employee 201 File</title>
 <style>
     @page {
-        size: 8.5in 14in; /* Legal / Long Bond Paper, confirmed requirement */
+        size: 8.5in 14in;
         margin: 0.5in 0.4in;
     }
 
@@ -16,10 +16,11 @@
         font-size: 9.5pt;
         color: #000;
         margin: 0 auto;
-        width: 7.6in; /* 8.5in page minus 0.4in left/right margins from @page */
+        width: 7.6in;
         max-width: 7.6in;
     }
 
+    /* Each .page is a hard page boundary */
     .page {
         page-break-after: always;
     }
@@ -27,9 +28,29 @@
         page-break-after: avoid;
     }
 
+    /*
+        outer-box no longer carries a border.
+        Border is now on .page-border-top (drawn once at the top of each page)
+        and .page-border-bottom (drawn once at the bottom of each page).
+        Left and right borders are on .page-border-sides, which wraps all content.
+        This avoids WeasyPrint splitting a single bordered div across pages.
+    */
     .outer-box {
-        border: 2px solid #000;
+        padding: 0;
+    }
+
+    .page-frame {
+        border-left: 2px solid #000;
+        border-right: 2px solid #000;
         padding: 8px;
+    }
+
+    .page-frame-top {
+        border-top: 2px solid #000;
+    }
+
+    .page-frame-bottom {
+        border-bottom: 2px solid #000;
     }
 
     .header-text {
@@ -60,13 +81,11 @@
         margin: 6px 0 4px 0;
     }
 
-    /* ---- Divider between sub-sections of Personal Information ---- */
     .divider {
         border-top: 2px solid #000;
         margin: 8px 0;
     }
 
-    /* ---- Outer two-column block: left = employee details, right = mobile/email ---- */
     .two-col {
         display: table;
         width: 100%;
@@ -86,7 +105,6 @@
         padding-left: 10px;
     }
 
-    /* ---- Generic 2-column sub-grid (used for Sex/Civil Status/Height/Weight AND the ID numbers) ---- */
     .sub-grid {
         display: table;
         width: 100%;
@@ -105,7 +123,6 @@
         padding-left: 8px;
     }
 
-    /* ---- Inline label:value line (the corrected pattern) ---- */
     .line {
         margin-bottom: 4px;
         line-height: 1.5;
@@ -155,7 +172,6 @@
         line-height: 1.3em;
     }
 
-    /* ---- Data tables (dependents, education, employment, training) ---- */
     table.data-table {
         width: 100%;
         border-collapse: collapse;
@@ -197,6 +213,7 @@
 <!-- =========================== PAGE 1 =========================== -->
 <div class="page">
 <div class="outer-box">
+<div class="page-frame page-frame-top page-frame-bottom">
 
     <div class="header-text">
         EMPLOYEE 201 FILE
@@ -227,7 +244,6 @@
 
     <div class="two-col">
         <div class="col-left">
-
             <div class="sub-grid">
                 <div class="sub-col left">
                     <div class="line">
@@ -278,7 +294,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
         <div class="col-right">
             <div class="line">
@@ -400,13 +415,6 @@
         </tbody>
     </table>
 
-</div>
-</div>
-
-<!-- =========================== PAGE 2 =========================== -->
-<div class="page">
-<div class="outer-box">
-
     <div class="section-title">EDUCATIONAL BACKGROUND</div>
     <table class="data-table">
         <thead>
@@ -509,6 +517,15 @@
         </tbody>
     </table>
 
+</div>
+</div>
+</div>
+
+<!-- =========================== PAGE 2 (placeholder, reserved for future content) =========================== -->
+<div class="page">
+<div class="outer-box">
+<div class="page-frame page-frame-top page-frame-bottom">
+</div>
 </div>
 </div>
 

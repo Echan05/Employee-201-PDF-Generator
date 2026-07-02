@@ -14,6 +14,29 @@ EDUCATION_LEVELS = [
     ("VOC. COURSE", "C"),
 ]
 
+# Order for page 2's image display. minor_image(s) always come first
+# (per Echan), then the primary record's own images in this fixed order.
+# "Skip if missing" is enforced by _collect_page2_images below, not here -
+# this list is just field names, existence-checked at collection time.
+# Labels confirmed with Echan, 2026-07-02 - shown as a caption above each
+# image in the PDF. Dict preserves the same fixed display order as before
+# (Python dicts keep insertion order), so PRIMARY_IMAGE_FIELDS below is
+# just this dict's keys - no separate list to keep in sync anymore.
+PRIMARY_IMAGE_LABELS = {
+    "gcash_image": "GCash Account",
+    "sss_image": "SSS",
+    "drug_test_image": "Drug Test",
+    "valid_id_image": "Valid ID FRONT",
+    "valid_id_image_rear": "Valid ID BACK",
+    "heath_card_image": "Health Card",
+    "hcb_image": "Health Card Benefits",
+    "pag_image": "Pag-IBIG",
+    "ph_image": "PhilHealth",
+    "nbi_image": "NBI Clearance",
+    "ub_image": "Union Bank Account",
+}
+PRIMARY_IMAGE_FIELDS = list(PRIMARY_IMAGE_LABELS.keys())
+
 
 def _first_by_relation(parents: list, relation_keyword: str):
     """Return the first ParentRecord whose fam_rela contains relation_keyword
@@ -23,6 +46,30 @@ def _first_by_relation(parents: list, relation_keyword: str):
             return p
     return None
 
+def _collect_page2_images(data) -> list[tuple[str, str]]:
+    """Ordered list of (url, label) pairs for page 2: all minor_image(s)
+    first (a minor SectionResult can contain more than one record, each
+    labeled with its own minor_reqs value - e.g. "Certificate, Birth" -
+    since minor documents aren't a fixed single type), then the primary
+    record's 11 document images labeled per PRIMARY_IMAGE_LABELS. Missing
+    images (None, already normalized upstream by the Pydantic validators)
+    are simply not appended - this is what makes the later images flow up
+    and fill the gap in the layout, rather than leaving a reserved blank
+    slot."""
+    images = []
+
+    for minor in data.minors.data:
+        if minor.minor_image:
+            label = minor.minor_reqs or "Document"
+            images.append((minor.minor_image, label))
+
+    primary = data.primary
+    for field_name in PRIMARY_IMAGE_FIELDS:
+        url = getattr(primary, field_name)
+        if url:
+            images.append((url, PRIMARY_IMAGE_LABELS[field_name]))
+
+    return images
 
 def _group_education_by_level(education: list) -> list[tuple[str, list]]:
     """Group EducationRecord entries by their level label, preserving the
@@ -49,4 +96,5 @@ def build_template_context(data: Employee201Data) -> dict:
         "training": data.training.data,
         "employment": data.employment.data,
         "minors": data.minors.data,
+        "page2_images": _collect_page2_images(data),
     }
