@@ -7,7 +7,11 @@ Call sequence (confirmed with Echan, 2026-06-24):
      fire until rm_tran_no is known. If this call fails, we cannot
      proceed at all (no PDF without the primary record).
   2. Once rm_tran_no is known, fire all 5 secondary calls CONCURRENTLY -
-     they don't depend on each other, only on step 1's result.
+     they don't depend on each other, only on step 1's result. The
+     company-directory lookup (added 2026-07-06) also fires here,
+     concurrently with the 5 secondary calls - it only depends on
+     primary.company_name_con, already known at this point, not on
+     rm_tran_no.
   3. Each secondary call is individually fault-tolerant (continue with
      partial data per Echan's decision) - one API failing must not
      cancel the others or fail the whole request.
@@ -19,11 +23,14 @@ shown so far - plain GET with query params, no token visible).
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import httpx
 
+from app.services.table_cache import get_cached_table
 from app.models.aggregated import Employee201Data, SectionResult
+from app.models.company import CompanyRecord
 from app.models.education import EducationRecord
 from app.models.employment import EmploymentHistoryRecord
 from app.models.minor import MinorRecord
@@ -44,6 +51,11 @@ SECONDARY_ENDPOINTS = [
     ("api_hr_201_05_traning.php", "training_pooling_no", TrainingRecord, "training"),
     ("api_hr_201_06_minor.php", "minor_pooling", MinorRecord, "minors"),
 ]
+
+# Company directory endpoint (added 2026-07-06, for dynamic header company
+# name/logo). Confirmed real payload: 18 rows, same envelope shape as the
+# other 6 endpoints ({"status", "total", "data"}).
+COMPANY_ENDPOINT = "api_company.php"
 
 
 class PrimaryRecordNotFound(Exception):
@@ -76,11 +88,14 @@ async def fetch_primary_record(client: httpx.AsyncClient, erms_id: int) -> Prima
     if erms_id == 0:
         raise InvalidErmsId("erms_id=0 indicates an employee that has not been processed yet; cannot generate 201 file.")
 
-    url = f"{BASE_URL}/api_hr_201_01_main.php"
-    try:
+    async def _fetch_raw() -> dict:
+        url = f"{BASE_URL}/api_hr_201_01_main.php"
         resp = await client.get(url, timeout=30.0)  # no point passing erms_id - server ignores it; longer timeout for full-table fetch
         resp.raise_for_status()
-        envelope = resp.json()
+        return resp.json()
+
+    try:
+        envelope = await get_cached_table("api_hr_201_01_main.php", _fetch_raw)
     except (httpx.HTTPError, ValueError) as exc:
         raise PrimaryRecordNotFound(f"Failed to fetch primary employee table: {exc}") from exc
 
@@ -115,11 +130,14 @@ async def fetch_section(
     records within the same employee's filtered subset, never across the
     full unfiltered table.
     """
-    url = f"{BASE_URL}/{endpoint}"
-    try:
+    async def _fetch_raw() -> dict:
+        url = f"{BASE_URL}/{endpoint}"
         resp = await client.get(url, timeout=30.0)
         resp.raise_for_status()
-        envelope = resp.json()
+        return resp.json()
+
+    try:
+        envelope = await get_cached_table(endpoint, _fetch_raw)
     except httpx.TimeoutException as exc:
         logger.warning("Section '%s' timed out for rm_tran_no=%s: %s", section_name, rm_tran_no, exc)
         return SectionResult(data=[], status="timeout", error_detail=str(exc))
@@ -150,6 +168,66 @@ async def fetch_section(
     return SectionResult(data=deduped, status="ok")
 
 
+async def fetch_company_directory(client: httpx.AsyncClient) -> list[CompanyRecord]:
+    """Fetch the full company directory (18 rows as of 2026-07-06, real
+    payload confirmed).
+
+    ASSUMED, NOT YET DIRECTLY TESTED: that api_company.php shares the same
+    "ignores its query params, always returns the full table" behavior as
+    the other 6 endpoints (Section 4 of the handoff doc). Harmless if the
+    assumption is wrong either way - the table is tiny, so a full fetch +
+    client-side match costs nothing extra. Uses the same table_cache as
+    everything else, per Echan's confirmation to reuse that pattern here.
+    """
+    async def _fetch_raw() -> dict:
+        url = f"{BASE_URL}/{COMPANY_ENDPOINT}"
+        resp = await client.get(url, timeout=30.0)
+        resp.raise_for_status()
+        return resp.json()
+
+    try:
+        envelope = await get_cached_table(COMPANY_ENDPOINT, _fetch_raw)
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("Company directory fetch failed: %s", exc)
+        return []
+
+    records = envelope.get("data", []) if isinstance(envelope, dict) else envelope
+    if not isinstance(records, list):
+        logger.warning("Company directory: unexpected response shape, 'data' is not a list")
+        return []
+
+    try:
+        return [CompanyRecord(**row) for row in records]
+    except Exception as exc:  # noqa: BLE001 - a bad row here must not break the whole PDF
+        logger.warning("Company directory returned unparseable data: %s", exc)
+        return []
+
+
+def match_company(company_name_con: str | None, directory: list[CompanyRecord]) -> CompanyRecord | None:
+    """Match primary.company_name_con against company_name_con_x.
+
+    Case/whitespace-insensitive compare - cheap insurance against minor
+    formatting drift, NOT yet confirmed necessary (a real sample of
+    primary.company_name_con hasn't been checked against this match logic
+    yet - worth a real test the first time this runs against live data).
+
+    First match wins if company_name_con_x has duplicates. Known real case:
+    "MEGATEKTON MANUFACTURING CORP. (MET)" and "... (SEE)" both reduce to
+    company_name_con_x == "MEGATEKTON MANUFACTURING CORP." - harmless for
+    this feature since both rows share the same `company` and
+    `company_id_logo` values (they only diverge on signatory/header, which
+    this feature doesn't use). Re-check this if signatory/header ever get
+    pulled in later.
+    """
+    if not company_name_con:
+        return None
+    target = company_name_con.strip().upper()
+    for row in directory:
+        if row.company_name_con_x and row.company_name_con_x.strip().upper() == target:
+            return row
+    return None
+
+
 async def aggregate_employee_201(erms_id: int) -> Employee201Data:
     async with httpx.AsyncClient() as client:
         # Step 1: primary record is a hard sequential dependency - must complete
@@ -157,19 +235,24 @@ async def aggregate_employee_201(erms_id: int) -> Employee201Data:
         primary = await fetch_primary_record(client, erms_id)
         rm_tran_no = primary.rm_tran_no
 
-        # Step 2: fire all 5 secondary calls concurrently - return_exceptions
-        # is NOT needed here because fetch_section already catches its own
-        # errors internally and always returns a SectionResult, never raises.
-        import asyncio
-
-        results = await asyncio.gather(
-            *[
-                fetch_section(client, endpoint, param_name, rm_tran_no, model_cls, name)
-                for endpoint, param_name, model_cls, name in SECONDARY_ENDPOINTS
-            ]
+        # Step 2: fire all 5 secondary calls concurrently, plus the company
+        # directory lookup (only needs primary.company_name_con, already known).
+        # return_exceptions is NOT needed for the secondary calls because
+        # fetch_section already catches its own errors internally and always
+        # returns a SectionResult, never raises. fetch_company_directory follows
+        # the same never-raises contract, returning [] on failure.
+        section_results, company_directory = await asyncio.gather(
+            asyncio.gather(
+                *[
+                    fetch_section(client, endpoint, param_name, rm_tran_no, model_cls, name)
+                    for endpoint, param_name, model_cls, name in SECONDARY_ENDPOINTS
+                ]
+            ),
+            fetch_company_directory(client),
         )
 
-        sections = dict(zip([name for _, _, _, name in SECONDARY_ENDPOINTS], results))
+        sections = dict(zip([name for _, _, _, name in SECONDARY_ENDPOINTS], section_results))
+        company_match = match_company(primary.company_name_con, company_directory)
 
         return Employee201Data(
             primary=primary,
@@ -178,4 +261,5 @@ async def aggregate_employee_201(erms_id: int) -> Employee201Data:
             employment=sections["employment"],
             training=sections["training"],
             minors=sections["minors"],
+            company_match=company_match,  # requires this field added to Employee201Data - see chat note
         )

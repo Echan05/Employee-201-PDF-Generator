@@ -18,6 +18,7 @@ from typing import Generic, Literal, Optional, TypeVar
 
 from pydantic import BaseModel
 
+from app.models.company import CompanyRecord
 from app.models.education import EducationRecord
 from app.models.employment import EmploymentHistoryRecord
 from app.models.minor import MinorRecord
@@ -43,3 +44,4 @@ class Employee201Data(BaseModel):
     employment: SectionResult[EmploymentHistoryRecord]
     training: SectionResult[TrainingRecord]
     minors: SectionResult[MinorRecord]
+    company_match: CompanyRecord | None = None

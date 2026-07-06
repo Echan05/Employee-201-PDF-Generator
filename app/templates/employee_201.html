@@ -53,15 +53,46 @@
         border-bottom: 2px solid #000;
     }
 
-    .header-text {
+    /*
+        Header block, made dynamic 2026-07-06 (was a hardcoded
+        "EMPLOYEE 201 FILE" / "Consolidated Matrix Inc. (CMI)" pair).
+        3-cell table layout: fixed-width side cells (left holds the logo
+        if present, right is an empty spacer of the same width) around a
+        centered text cell. The right spacer exists purely so the text
+        cell stays visually centered on the page whether or not a logo is
+        present - without it, a left-only logo would pull the centered
+        text off-center relative to the full page width.
+    */
+    .header-block {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        margin-bottom: 4px;
+    }
+    .header-side-cell {
+        display: table-cell;
+        width: 70px;
+        vertical-align: middle;
+    }
+    .header-logo-img {
+        max-width: 60px;
+        max-height: 60px;
+        width: auto;
+        height: auto;
+        display: block;
+    }
+    .header-text-cell {
+        display: table-cell;
+        vertical-align: middle;
         text-align: center;
+    }
+    .header-company-name {
         font-weight: bold;
         font-size: 14pt;
     }
-    .header-sub {
+    .header-form-title {
         font-size: 8pt;
         font-weight: normal;
-        text-align: center;
     }
     .title-bar {
         text-align: center;
@@ -143,6 +174,14 @@
     }
     .line .val.name {
         min-width: 150px;
+    }
+    .line .val.wrap {
+        display: inline-block;
+        max-width: 100%;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        vertical-align: top;
     }
     .name-group {
         display: inline-block;
@@ -243,9 +282,17 @@
 <div class="outer-box">
 <div class="page-frame page-frame-top page-frame-bottom">
 
-    <div class="header-text">
-        EMPLOYEE 201 FILE
-        <div class="header-sub">Consolidated Matrix Inc. (CMI)</div>
+    <div class="header-block">
+        <div class="header-side-cell">
+            {% if header_logo_url %}
+            <img src="{{ header_logo_url }}" class="header-logo-img" alt="">
+            {% endif %}
+        </div>
+        <div class="header-text-cell">
+            <div class="header-company-name">{{ blank(header_company_name) }}</div>
+            <div class="header-form-title">EMPLOYEE 201 FILE</div>
+        </div>
+        <div class="header-side-cell"></div>
     </div>
 
     <div class="title-bar">PERSONAL INFORMATION</div>
@@ -324,13 +371,13 @@
             </div>
         </div>
         <div class="col-right">
-            <div class="line">
+            <div class="line" style="white-space:normal;">
                 <span class="lbl">Mobile Number:</span>
-                <span class="val">{{ blank(primary.rm_contact_no) }}</span>
+                <span class="val wrap">{{ blank(primary.rm_contact_no) }}</span>
             </div>
-            <div class="line">
+            <div class="line" style="white-space:normal;">
                 <span class="lbl">Email Address:</span>
-                <span class="val">{{ blank(primary.rm_email_address) }}</span>
+                <span class="val wrap">{{ blank(primary.rm_email_address) }}</span>
             </div>
         </div>
     </div>

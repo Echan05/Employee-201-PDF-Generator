@@ -17,11 +17,14 @@ Error mapping (per PROJECT_HANDOFF.md section 9.3):
 """
 from __future__ import annotations
 
+import base64
 import logging
+import mimetypes
 import re
 from pathlib import Path
 from urllib.parse import quote
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse, Response
 from jinja2 import Environment, FileSystemLoader
@@ -90,6 +93,31 @@ def _content_disposition(filename: str) -> str:
     return f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{utf8_quoted}'
 
 
+async def _to_data_uri(url: str) -> str | None:
+    """Fetch one remote image URL and return a base64 data URI.
+
+    Returns None on any fetch/HTTP error so header rendering can degrade
+    gracefully without failing the whole PDF generation.
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=20.0)
+            resp.raise_for_status()
+            content = resp.content
+            content_type = resp.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    except httpx.HTTPError as exc:
+        logger.warning("Failed to fetch header logo %s: %s", url, exc)
+        return None
+
+    if not content:
+        logger.warning("Header logo URL returned empty response body: %s", url)
+        return None
+
+    mime_type = content_type if content_type.startswith("image/") else (mimetypes.guess_type(url)[0] or "image/png")
+    encoded = base64.b64encode(content).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
+
+
 @router.get("/employee-201/view", response_class=HTMLResponse)
 async def get_employee_201_preview_page():
     """Serves the static preview page shell. The page itself fetches the
@@ -113,6 +141,13 @@ async def get_employee_201_pdf(
 
     try:
         context = build_template_context(data)
+
+        # Convert logo URL to an embedded data URI so PDF rendering is not
+        # dependent on an additional remote fetch at WeasyPrint render time.
+        # If unavailable/unreachable, render without logo (no hard failure).
+        header_logo_url = context.get("header_logo_url")
+        if header_logo_url:
+            context["header_logo_url"] = await _to_data_uri(header_logo_url)
 
         # page2_images is the raw ordered URL list from template_context.py -
         # consumed here (not passed to the template directly) since fetching

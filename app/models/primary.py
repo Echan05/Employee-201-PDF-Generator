@@ -29,6 +29,9 @@ class PrimaryEmployeeRecord(BaseModel):
     rm_tran_no: int
     erms_id: int
 
+    # Company
+    company_name_con: str | None = None
+
     # Identity
     rm_lastname: str
     rm_first_name: str

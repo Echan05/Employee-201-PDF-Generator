@@ -83,8 +83,42 @@ def _group_education_by_level(education: list) -> list[tuple[str, list]]:
     return grouped
 
 
+def _resolve_header(data: Employee201Data) -> tuple[str | None, str | None]:
+    """Resolve the header's company display name and logo URL.
+
+    Added 2026-07-06, per Echan's request to make the header dynamic per
+    the employee's company rather than a hardcoded "Consolidated Matrix
+    Inc. (CMI)" string.
+
+    Priority:
+    1. If company directory lookup found a match (data.company_match, set
+       in aggregator.match_company): use its `company` field as the big
+       header text, and its `company_id_logo` as the logo (which will be
+       None for rows like "_WALK-IN" that have no logo on file - per
+       Echan's explicit answer, that renders with no logo but still shows
+       whatever company text is available).
+    2. If there's no match at all (company_name_con didn't hit anything in
+       the directory, not even the blank "_WALK-IN" row): fall back to the
+       primary record's own company_name_con value, no logo. There is no
+       other company text available in this case.
+
+    getattr with a default is used for company_match specifically because
+    it's a newly-added field on Employee201Data - defensive against it not
+    existing yet if aggregated.py hasn't been updated in whatever
+    environment this runs in. Once that field is confirmed present, this
+    can just be data.company_match directly.
+    """
+    company_match = getattr(data, "company_match", None)
+
+    if company_match is not None and company_match.company:
+        return company_match.company, company_match.company_id_logo
+
+    return data.primary.company_name_con, None
+
+
 def build_template_context(data: Employee201Data) -> dict:
     parents = data.parents.data
+    header_company_name, header_logo_url = _resolve_header(data)
 
     return {
         "primary": data.primary,
@@ -97,4 +131,6 @@ def build_template_context(data: Employee201Data) -> dict:
         "employment": data.employment.data,
         "minors": data.minors.data,
         "page2_images": _collect_page2_images(data),
+        "header_company_name": header_company_name,
+        "header_logo_url": header_logo_url,
     }

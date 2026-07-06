@@ -1,7 +1,7 @@
 """
-Fetches page-2 document images once, corrects their orientation, measures
-their real pixel dimensions to classify orientation (portrait vs
-landscape), and groups them into a list of "pages" for the PDF.
+Fetches page-2 document images once, corrects orientation, measures their
+real pixel dimensions to classify orientation (portrait vs landscape), and
+groups them into a list of "pages" for the PDF.
 
 Confirmed with Echan, 2026-07-02:
   - Regrouped by orientation, NOT interleaved in original field order:
@@ -11,24 +11,28 @@ Confirmed with Echan, 2026-07-02:
   - Every image gets a visible label (see PRIMARY_IMAGE_LABELS in
     template_context.py).
 
-ORIENTATION CORRECTION - two layers, in order:
+ORIENTATION CORRECTION - EXIF transpose only (PIL.ImageOps.exif_transpose).
+Fixes images where the camera recorded rotation metadata but didn't
+physically rotate pixel data. Free, fast, no downside - already-correct
+images are unaffected (their EXIF tag is "normal" or absent).
 
-1. EXIF transpose (PIL.ImageOps.exif_transpose): fixes images where the
-   camera recorded an Orientation tag but didn't physically rotate pixel
-   data. Free, fast, but does nothing if no EXIF tag is present.
+A face-detection-based second layer (OpenCV Haar Cascade) was tried and
+REMOVED, 2026-07-xx (confirmed with Echan): it correctly fixed images with
+no EXIF data but a visible, correctly-oriented face (e.g. the PhilHealth
+card, the NBI clearance), but a single false-positive face detection on
+noisy non-face content (X-ray film grain, dense lab-report text, scan
+artifacts) was enough to wrongly rotate images that were already correct
+and never had a real face in them at all. Tried tightening the detector
+(require an unambiguous single-angle match, scale minSize to image
+dimensions) but Echan judged the tradeoff not worth it - better to
+occasionally miss a real 180-degree/no-EXIF rotation than risk actively
+breaking a document that was already fine. Do not re-add face-detection
+orientation correction without re-confirming this decision with Echan -
+this was a deliberate, tested rejection, not an oversight.
 
-2. Face-detection-based correction (OpenCV Haar Cascade), confirmed with
-   Echan 2026-07-02 as the lightweight alternative to full OCR: tries the
-   image at 0/90/180/270 degrees and keeps whichever rotation yields the
-   most confident frontal-face detection. This is necessary because a
-   180-degree rotation does NOT change an image's width/height at all -
-   no geometry/aspect-ratio check can ever distinguish upright-landscape
-   from upside-down-landscape. Only content-aware detection can.
-   KNOWN LIMIT: only helps images that actually contain a visible face
-   (most ID/card photos do; lab reports, X-rays, diplomas etc. do not,
-   and are left untouched by this step - same as before, not a
-   regression). If no face is confidently found at any of the 4 angles,
-   the image is left as EXIF-transpose left it rather than guessing.
+KNOWN LIMIT after this revert: an image with a genuine rotation and NO
+EXIF orientation tag (e.g. a flat scan with no camera metadata) will NOT
+be auto-corrected. This is an accepted, explicit tradeoff, not a bug.
 
 Images are embedded as base64 data URIs rather than left as external URLs
 so WeasyPrint does not need to re-fetch them a second time during PDF
@@ -49,16 +53,10 @@ import mimetypes
 from dataclasses import dataclass
 from io import BytesIO
 
-import cv2
 import httpx
-import numpy as np
 from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
-
-_FACE_CASCADE = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
 
 
 @dataclass
@@ -68,33 +66,10 @@ class PageImage:
     label: str
 
 
-def _correct_face_orientation(pil_image: Image.Image) -> Image.Image:
-    """Try the image at 0/90/180/270 degrees, return whichever rotation
-    yields the most confident frontal-face detection (highest face count
-    as a simple confidence proxy). Returns the ORIGINAL image unchanged
-    if no face is confidently detected at any angle - guessing here would
-    risk actively rotating an already-correct image, which is worse than
-    leaving a genuinely-unfixable one alone."""
-    best_image = pil_image
-    best_count = 0
-
-    for angle in (0, 90, 180, 270):
-        candidate = pil_image.rotate(angle, expand=True)
-        gray = np.array(candidate.convert("L"))
-        faces = _FACE_CASCADE.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40)
-        )
-        if len(faces) > best_count:
-            best_count = len(faces)
-            best_image = candidate
-
-    return best_image
-
-
 async def _fetch_and_measure(client: httpx.AsyncClient, url: str, label: str) -> PageImage | None:
-    """Fetch one image, correct orientation (EXIF, then face-detection
-    fallback), determine orientation from its real post-correction pixel
-    dimensions, and build a base64 data URI from the corrected bytes."""
+    """Fetch one image, correct orientation via EXIF, determine
+    orientation from its real post-correction pixel dimensions, and
+    build a base64 data URI from the corrected bytes."""
     try:
         resp = await client.get(url, timeout=30.0)
         resp.raise_for_status()
@@ -106,12 +81,11 @@ async def _fetch_and_measure(client: httpx.AsyncClient, url: str, label: str) ->
     try:
         with Image.open(BytesIO(content)) as raw_img:
             img_format = raw_img.format or "JPEG"
-            exif_corrected = ImageOps.exif_transpose(raw_img)
-            fully_corrected = _correct_face_orientation(exif_corrected)
-            width, height = fully_corrected.size
+            corrected_img = ImageOps.exif_transpose(raw_img)
+            width, height = corrected_img.size
 
             buffer = BytesIO()
-            fully_corrected.save(buffer, format=img_format)
+            corrected_img.save(buffer, format=img_format)
             corrected_bytes = buffer.getvalue()
     except Exception as exc:  # noqa: BLE001 - a corrupt/unsupported image must not crash the whole request
         logger.warning("Failed to read/correct orientation for page-2 image %s: %s", url, exc)
