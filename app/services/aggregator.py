@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 
 import httpx
 
@@ -41,21 +42,36 @@ from app.services.dedup import dedupe_records
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://cmiitdept.com/hr"
+
+def _required_env(name: str) -> str:
+    """Read a required environment variable, failing loudly and clearly
+    at startup rather than with a bare KeyError buried in a stack trace
+    the first time something tries to use it."""
+    try:
+        return os.environ[name]
+    except KeyError as exc:
+        raise RuntimeError(
+            f"{name} is not set. Add it to your .env file - see .env.example for the full template."
+        ) from exc
+
+
+BASE_URL = _required_env("BASE_URL")
+ENDPOINT_PRIMARY = _required_env("ENDPOINT_PRIMARY")
+ENDPOINT_PARENTS = _required_env("ENDPOINT_PARENTS")
+ENDPOINT_EDUCATION = _required_env("ENDPOINT_EDUCATION")
+ENDPOINT_EMPLOYMENT = _required_env("ENDPOINT_EMPLOYMENT")
+ENDPOINT_TRAINING = _required_env("ENDPOINT_TRAINING")
+ENDPOINT_MINOR = _required_env("ENDPOINT_MINOR")
+COMPANY_ENDPOINT = _required_env("ENDPOINT_COMPANY")
 
 # (endpoint path, query param name, response model, friendly name for logging)
 SECONDARY_ENDPOINTS = [
-    ("api_hr_201_02_parents.php", "fam_pooling", ParentRecord, "parents"),
-    ("api_hr_201_03_educ.php", "edu_pool_id", EducationRecord, "education"),
-    ("api_hr_201_04_employment.php", "history_pooling", EmploymentHistoryRecord, "employment"),
-    ("api_hr_201_05_traning.php", "training_pooling_no", TrainingRecord, "training"),
-    ("api_hr_201_06_minor.php", "minor_pooling", MinorRecord, "minors"),
+    (ENDPOINT_PARENTS, "fam_pooling", ParentRecord, "parents"),
+    (ENDPOINT_EDUCATION, "edu_pool_id", EducationRecord, "education"),
+    (ENDPOINT_EMPLOYMENT, "history_pooling", EmploymentHistoryRecord, "employment"),
+    (ENDPOINT_TRAINING, "training_pooling_no", TrainingRecord, "training"),
+    (ENDPOINT_MINOR, "minor_pooling", MinorRecord, "minors"),
 ]
-
-# Company directory endpoint (added 2026-07-06, for dynamic header company
-# name/logo). Confirmed real payload: 18 rows, same envelope shape as the
-# other 6 endpoints ({"status", "total", "data"}).
-COMPANY_ENDPOINT = "api_company.php"
 
 
 class PrimaryRecordNotFound(Exception):
@@ -89,13 +105,13 @@ async def fetch_primary_record(client: httpx.AsyncClient, erms_id: int) -> Prima
         raise InvalidErmsId("erms_id=0 indicates an employee that has not been processed yet; cannot generate 201 file.")
 
     async def _fetch_raw() -> dict:
-        url = f"{BASE_URL}/api_hr_201_01_main.php"
+        url = f"{BASE_URL}/{ENDPOINT_PRIMARY}"
         resp = await client.get(url, timeout=30.0)  # no point passing erms_id - server ignores it; longer timeout for full-table fetch
         resp.raise_for_status()
         return resp.json()
 
     try:
-        envelope = await get_cached_table("api_hr_201_01_main.php", _fetch_raw)
+        envelope = await get_cached_table(ENDPOINT_PRIMARY, _fetch_raw)
     except (httpx.HTTPError, ValueError) as exc:
         raise PrimaryRecordNotFound(f"Failed to fetch primary employee table: {exc}") from exc
 

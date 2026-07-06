@@ -10,3 +10,16 @@ build/
 dist/
 *.egg-info/
 .env
+
+# VS Code (Echan's editor, per project notes) - workspace-specific settings
+# shouldn't be shared/committed
+.vscode/
+
+# Windows OS junk
+Thumbs.db
+desktop.ini
+
+# dev_preview generated artifacts - PROJECT_HANDOFF.md Section 6 explicitly
+# notes these are "generated artifacts, not committed"
+dev_preview/output.html
+dev_preview/output.pdf
