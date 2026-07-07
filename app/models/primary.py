@@ -90,11 +90,12 @@ class PrimaryEmployeeRecord(BaseModel):
     ph_image: NoneIfBlank = None
     nbi_image: NoneIfBlank = None
     ub_image: NoneIfBlank = None
+    signed_contract: NoneIfBlank = None
 
     @field_validator(
         "gcash_image", "sss_image", "drug_test_image", "valid_id_image",
         "valid_id_image_rear", "heath_card_image", "hcb_image", "pag_image",
-        "ph_image", "nbi_image", "ub_image",
+        "ph_image", "nbi_image", "ub_image", "signed_contract",
         mode="before",
     )
     @classmethod

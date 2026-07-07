@@ -8,6 +8,7 @@ Wires together pieces that already existed in isolation:
         -> template_context.build_template_context()
         -> Jinja2 render of app/templates/employee_201.html
         -> WeasyPrint HTML -> PDF bytes
+        -> contract_merge.append_signed_contract_if_present()
         -> HTTP response with Content-Disposition attachment
 
 Error mapping (per PROJECT_HANDOFF.md section 9.3):
@@ -35,6 +36,7 @@ from app.services.aggregator import (
     PrimaryRecordNotFound,
     aggregate_employee_201,
 )
+from app.services.contract_merge import append_signed_contract_if_present
 from app.services.image_layout import fetch_and_classify_images, group_into_pages
 from app.services.template_context import build_template_context
 
@@ -160,6 +162,15 @@ async def get_employee_201_pdf(
         template = jinja_env.get_template("employee_201.html")
         html_string = template.render(**context)
         pdf_bytes = HTML(string=html_string).write_pdf()
+
+        # Append the employee's signed contract (fetched from
+        # primary.signed_contract) as extra pages at the end of the PDF.
+        # Fails silently - returns pdf_bytes unchanged - if the URL is
+        # missing, unreachable, or not a valid PDF. Same "skip silently"
+        # policy as page2 images (Section 7B of the handoff).
+        pdf_bytes = await append_signed_contract_if_present(
+            pdf_bytes, data.primary.signed_contract
+        )
     except Exception as exc:  # noqa: BLE001 - last line of defense, must not leak a raw 500 with no context
         logger.exception("Failed to render/generate PDF for erms_id=%s", erms_id)
         raise HTTPException(status_code=500, detail="Failed to generate PDF") from exc

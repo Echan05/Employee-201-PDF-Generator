@@ -6,3 +6,5 @@ weasyprint
 pillow
 pydantic
 typing_extensions
+pikepdf
+python-dotenv
