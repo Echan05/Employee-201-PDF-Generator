@@ -55,14 +55,14 @@ def _required_env(name: str) -> str:
         ) from exc
 
 
-BASE_URL = _required_env("BASE_URL")
-ENDPOINT_PRIMARY = _required_env("ENDPOINT_PRIMARY")
-ENDPOINT_PARENTS = _required_env("ENDPOINT_PARENTS")
-ENDPOINT_EDUCATION = _required_env("ENDPOINT_EDUCATION")
-ENDPOINT_EMPLOYMENT = _required_env("ENDPOINT_EMPLOYMENT")
-ENDPOINT_TRAINING = _required_env("ENDPOINT_TRAINING")
-ENDPOINT_MINOR = _required_env("ENDPOINT_MINOR")
-COMPANY_ENDPOINT = _required_env("ENDPOINT_COMPANY")
+BASE_URL = "https://cmiitdept.com/hr"
+ENDPOINT_PRIMARY = "api_hr_201_01_main.php"
+ENDPOINT_PARENTS = "api_hr_201_02_parents.php"
+ENDPOINT_EDUCATION = "api_hr_201_03_educ.php"
+ENDPOINT_EMPLOYMENT = "api_hr_201_04_employment.php"
+ENDPOINT_TRAINING = "api_hr_201_05_traning.php"
+ENDPOINT_MINOR = "api_hr_201_06_minor.php"
+COMPANY_ENDPOINT = "api_company.php"
 
 # (endpoint path, query param name, response model, friendly name for logging)
 SECONDARY_ENDPOINTS = [
