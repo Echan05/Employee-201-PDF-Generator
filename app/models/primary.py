@@ -18,11 +18,29 @@ from typing_extensions import Annotated
 
 from app.models.normalizers import (
     blank_str_to_none,
+    null_date_to_none,
     zero_to_none,
 )
 
 NoneIfBlank = Annotated[Optional[str], BeforeValidator(blank_str_to_none)]
 NoneIfZero = Annotated[Optional[int], BeforeValidator(zero_to_none)]
+
+
+def _blank_or_zero_date(v):
+    """Empty string OR MySQL zero-date "0000-00-00" -> None.
+
+    Applied to the new seculic_iss_date/seculic_exp_date/secu_ddo_date
+    fields, per the same blank/zero-date normalization rule already
+    confirmed for other date-shaped fields in this project (Section 5 of
+    the handoff). Not independently re-confirmed against real "0000-00-00"
+    values for these three specific fields this session - if a real
+    sample ever shows a different placeholder pattern for these fields,
+    this needs revisiting.
+    """
+    return null_date_to_none(blank_str_to_none(v))
+
+
+NoneIfBlankOrZeroDate = Annotated[Optional[str], BeforeValidator(_blank_or_zero_date)]
 
 
 class PrimaryEmployeeRecord(BaseModel):
@@ -92,13 +110,28 @@ class PrimaryEmployeeRecord(BaseModel):
     ub_image: NoneIfBlank = None
     signed_contract: NoneIfBlank = None
 
+    # Security-specific fields [NEW this session]
+    # sg_license/ddo are image URLs (same "trailing slash, no filename ->
+    # None" placeholder pattern as the other 11 image fields - confirmed
+    # against a real sample this session, see chat). seculic_no is plain
+    # text. The three date fields use NoneIfBlankOrZeroDate rather than
+    # plain NoneIfBlank - see that type's docstring above for why.
+    sg_license: NoneIfBlank = None
+    seculic_no: NoneIfBlank = None
+    seculic_iss_date: NoneIfBlankOrZeroDate = None
+    seculic_exp_date: NoneIfBlankOrZeroDate = None
+    ddo: NoneIfBlank = None
+    secu_ddo_date: NoneIfBlankOrZeroDate = None
+
     @field_validator(
         "gcash_image", "sss_image", "drug_test_image", "valid_id_image",
         "valid_id_image_rear", "heath_card_image", "hcb_image", "pag_image",
         "ph_image", "nbi_image", "ub_image", "signed_contract",
+        "sg_license", "ddo",
         mode="before",
     )
     @classmethod
     def normalize_image_url(cls, v):
         from app.models.normalizers import image_url_to_none_if_no_filename
+
         return image_url_to_none_if_no_filename(v)

@@ -9,12 +9,20 @@ Wires together pieces that already existed in isolation:
         -> Jinja2 render of app/templates/employee_201.html
         -> WeasyPrint HTML -> PDF bytes
         -> contract_merge.append_signed_contract_if_present()
+        -> security_docs_merge.append_security_docs_if_present()   [NEW]
         -> HTTP response with Content-Disposition attachment
 
 Error mapping (per PROJECT_HANDOFF.md section 9.3):
     InvalidErmsId          -> 400 Bad Request  (erms_id=0, structurally invalid input)
     PrimaryRecordNotFound   -> 404 Not Found    (valid-looking erms_id, no matching record)
     anything else (render/PDF failure) -> 500, logged with full traceback
+
+Page order in the final PDF, confirmed this session:
+    main template pages (page 1 + page2 document images)
+    -> signed contract pages (Section 7F)
+    -> security license / DDO pages (NEW - must come after the contract,
+       hence the separate WeasyPrint pass + pikepdf merge in
+       security_docs_merge.py rather than being part of the main template)
 """
 from __future__ import annotations
 
@@ -38,6 +46,7 @@ from app.services.aggregator import (
 )
 from app.services.contract_merge import append_signed_contract_if_present
 from app.services.image_layout import fetch_and_classify_images, group_into_pages
+from app.services.security_docs_merge import append_security_docs_if_present
 from app.services.template_context import build_template_context
 
 logger = logging.getLogger(__name__)
@@ -171,6 +180,13 @@ async def get_employee_201_pdf(
         pdf_bytes = await append_signed_contract_if_present(
             pdf_bytes, data.primary.signed_contract
         )
+
+        # Append Security License / DDO pages, in that order, AFTER the
+        # signed contract - confirmed placement this session. Each group
+        # (License, DDO) is judged independently inside
+        # append_security_docs_if_present and skipped silently if its
+        # image field is blank/missing. [NEW this session]
+        pdf_bytes = await append_security_docs_if_present(pdf_bytes, data.primary)
     except Exception as exc:  # noqa: BLE001 - last line of defense, must not leak a raw 500 with no context
         logger.exception("Failed to render/generate PDF for erms_id=%s", erms_id)
         raise HTTPException(status_code=500, detail="Failed to generate PDF") from exc
