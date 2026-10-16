@@ -117,3 +117,42 @@ async def append_signed_contract_if_present(
         return pdf_bytes
 
     return append_contract_pages(pdf_bytes, contract_bytes)
+
+
+def merge_pdf_parts(parts: list[bytes], title: str | None = None) -> bytes:
+    """
+    Merge several PDFs into one, in the order given.
+
+    Each part that is not a valid, openable PDF (e.g. an HTML error page
+    returned in place of the contract) is logged and skipped - same "skip
+    silently" policy as append_contract_pages, so one bad part never takes
+    down the whole 201 PDF.
+
+    A brand-new document is created as the container, so the first part's
+    document metadata is not carried over; `title` sets /Title explicitly
+    (the PDF viewer toolbar shows it, e.g. "Employee 201 File").
+    """
+    opened: list[pikepdf.Pdf] = []
+    try:
+        merged = pikepdf.new()
+        opened.append(merged)
+
+        for index, part in enumerate(parts):
+            try:
+                source = pikepdf.open(io.BytesIO(part))
+                opened.append(source)
+                merged.pages.extend(source.pages)
+            except pikepdf.PdfError as exc:
+                logger.warning("PDF part %d could not be merged, skipping: %s", index, exc)
+
+        if title:
+            merged.docinfo["/Title"] = title
+
+        output_buffer = io.BytesIO()
+        merged.save(output_buffer)
+        return output_buffer.getvalue()
+    finally:
+        # Source PDFs must stay open until save() has finished, so they are
+        # closed here rather than per-iteration.
+        for pdf in opened:
+            pdf.close()

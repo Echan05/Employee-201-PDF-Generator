@@ -7,9 +7,11 @@ Wires together pieces that already existed in isolation:
     aggregator.aggregate_employee_201()
         -> template_context.build_template_context()
         -> Jinja2 render of app/templates/employee_201.html
-        -> WeasyPrint HTML -> PDF bytes
-        -> contract_merge.append_signed_contract_if_present()
-        -> security_docs_merge.append_security_docs_if_present()   [NEW]
+        -> WeasyPrint HTML -> PDF bytes            (main pages only)
+        -> contract_merge.fetch_signed_contract()  (signed contract, if any)
+        -> hcb_pages.render_hcb_pdf_if_present()   (Health Card Benefits, if any)
+        -> contract_merge.merge_pdf_parts()        (contract -> HCB -> main)
+        -> security_docs_merge.append_security_docs_if_present()
         -> HTTP response with Content-Disposition attachment
 
 Error mapping (per PROJECT_HANDOFF.md section 9.3):
@@ -17,12 +19,15 @@ Error mapping (per PROJECT_HANDOFF.md section 9.3):
     PrimaryRecordNotFound   -> 404 Not Found    (valid-looking erms_id, no matching record)
     anything else (render/PDF failure) -> 500, logged with full traceback
 
-Page order in the final PDF, confirmed this session:
-    main template pages (page 1 + page2 document images)
-    -> signed contract pages (Section 7F)
-    -> security license / DDO pages (NEW - must come after the contract,
-       hence the separate WeasyPrint pass + pikepdf merge in
-       security_docs_merge.py rather than being part of the main template)
+Page order in the final PDF (changed and confirmed with Echan, 2026-10-16):
+    signed contract pages (if any)
+    -> Health Card Benefits page (if any; goes first when there is no contract)
+    -> main template pages (page 1 + remaining page2 document images)
+    -> security license / DDO pages (if any)
+
+Why the order is assembled here: the main template always renders page 1
+first, and the contract is a raw external PDF, so contract and HCB can only
+be placed ahead of the main pages by merging separate PDFs after rendering.
 """
 from __future__ import annotations
 
@@ -44,7 +49,8 @@ from app.services.aggregator import (
     PrimaryRecordNotFound,
     aggregate_employee_201,
 )
-from app.services.contract_merge import append_signed_contract_if_present
+from app.services.contract_merge import fetch_signed_contract, merge_pdf_parts
+from app.services.hcb_pages import render_hcb_pdf_if_present
 from app.services.image_layout import fetch_and_classify_images, group_into_pages
 from app.services.security_docs_merge import append_security_docs_if_present
 from app.services.template_context import build_template_context
@@ -170,22 +176,29 @@ async def get_employee_201_pdf(
 
         template = jinja_env.get_template("employee_201.html")
         html_string = template.render(**context)
-        pdf_bytes = HTML(string=html_string).write_pdf()
+        main_pdf_bytes = HTML(string=html_string).write_pdf()
 
-        # Append the employee's signed contract (fetched from
-        # primary.signed_contract) as extra pages at the end of the PDF.
-        # Fails silently - returns pdf_bytes unchanged - if the URL is
-        # missing, unreachable, or not a valid PDF. Same "skip silently"
-        # policy as page2 images (Section 7B of the handoff).
-        pdf_bytes = await append_signed_contract_if_present(
-            pdf_bytes, data.primary.signed_contract
-        )
+        # Final page order (confirmed with Echan, 2026-10-16):
+        #   signed contract -> Health Card Benefits -> main pages
+        # followed by Security License / DDO below. Each of the first two is
+        # skipped silently (None) if missing, unreachable or invalid - same
+        # "skip silently" policy as page2 images (Section 7B of the handoff).
+        # With no contract but an HCB, HCB comes first; with neither, the
+        # PDF is just the main pages.
+        contract_bytes = await fetch_signed_contract(data.primary.signed_contract)
+        hcb_pdf_bytes = await render_hcb_pdf_if_present(data.primary)
 
-        # Append Security License / DDO pages, in that order, AFTER the
-        # signed contract - confirmed placement this session. Each group
-        # (License, DDO) is judged independently inside
+        parts = [
+            part
+            for part in (contract_bytes, hcb_pdf_bytes, main_pdf_bytes)
+            if part is not None
+        ]
+        pdf_bytes = merge_pdf_parts(parts, title="Employee 201 File")
+
+        # Append Security License / DDO pages AFTER everything above.
+        # Each group (License, DDO) is judged independently inside
         # append_security_docs_if_present and skipped silently if its
-        # image field is blank/missing. [NEW this session]
+        # image field is blank/missing.
         pdf_bytes = await append_security_docs_if_present(pdf_bytes, data.primary)
     except Exception as exc:  # noqa: BLE001 - last line of defense, must not leak a raw 500 with no context
         logger.exception("Failed to render/generate PDF for erms_id=%s", erms_id)

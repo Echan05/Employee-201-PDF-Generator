@@ -1,0 +1,92 @@
+/* Shared PDF page geometry, page frame and document-image-page styles.
+   Pulled in with a Jinja include tag inside the style element of
+   employee_201.html and hcb_page.html, so the main 201 pages and the
+   Health Card Benefits page always render identically. Change image-page
+   styling HERE, not in those templates.
+   (security_docs.html deliberately does not use this: it has its own
+   single full border.)
+   Do NOT write Jinja delimiters (curly-brace + percent, double curly
+   braces, curly-brace + hash) anywhere in this file, even inside this
+   comment: Jinja executes them. */
+
+@page {
+    size: 8.5in 14in;
+    margin: 0.5in 0.4in;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9.5pt;
+    color: #000;
+    margin: 0 auto;
+    width: 7.6in;
+    max-width: 7.6in;
+}
+
+/* Each .page is a hard page boundary */
+.page {
+    page-break-after: always;
+}
+.page:last-child {
+    page-break-after: avoid;
+}
+
+/*
+    outer-box no longer carries a border.
+    Border is now on .page-border-top (drawn once at the top of each page)
+    and .page-border-bottom (drawn once at the bottom of each page).
+    Left and right borders are on .page-border-sides, which wraps all content.
+    This avoids WeasyPrint splitting a single bordered div across pages.
+*/
+.outer-box {
+    padding: 0;
+}
+
+.page-frame {
+    border-left: 2px solid #000;
+    border-right: 2px solid #000;
+    padding: 8px;
+}
+
+.page-frame-top {
+    border-top: 2px solid #000;
+}
+
+.page-frame-bottom {
+    border-bottom: 2px solid #000;
+}
+
+.page-portrait-image {
+    text-align: center;
+}
+.page-portrait-image img {
+    max-width: 100%;
+    max-height: 12.5in;
+    width: auto;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border: 1px solid #000;
+}
+
+.page-landscape-image {
+    text-align: center;
+}
+.page-landscape-image img {
+    max-width: 100%;
+    max-height: 6in;
+    width: auto;
+    height: auto;
+    display: block;
+    margin: 0 auto 12px auto;
+    border: 1px solid #000;
+}
+
+.image-label {
+    font-weight: bold;
+    text-align: center;
+    font-size: 10pt;
+    margin-bottom: 4px;
+}

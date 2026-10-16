@@ -1,0 +1,25 @@
+{# Shared document-image pages (portraits one per page, landscapes paired).
+   Included by employee_201.html and hcb_page.html. Expects `image_pages`:
+   a list of pages, each a list of 1-2 PageImage objects (see
+   app/services/image_layout.py group_into_pages). #}
+{% for page_images in image_pages %}
+<div class="page">
+<div class="outer-box">
+<div class="page-frame page-frame-top page-frame-bottom">
+    {% if page_images|length == 1 %}
+    <div class="page-portrait-image">
+        <div class="image-label">{{ page_images[0].label }}</div>
+        <img src="{{ page_images[0].data_uri }}" alt="{{ page_images[0].label }}">
+    </div>
+    {% else %}
+    <div class="page-landscape-image">
+        {% for img in page_images %}
+        <div class="image-label">{{ img.label }}</div>
+        <img src="{{ img.data_uri }}" alt="{{ img.label }}">
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+</div>
+</div>
+{% endfor %}

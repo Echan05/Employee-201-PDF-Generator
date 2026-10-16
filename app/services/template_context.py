@@ -29,7 +29,9 @@ PRIMARY_IMAGE_LABELS = {
     "valid_id_image": "Valid ID FRONT",
     "valid_id_image_rear": "Valid ID BACK",
     "heath_card_image": "Health Card",
-    "hcb_image": "Health Card Benefits",
+    # "hcb_image" (Health Card Benefits) is intentionally NOT listed here:
+    # it is rendered separately by app/services/hcb_pages.py so it can be
+    # placed before the main 201 pages (order confirmed 2026-10-16).
     "pag_image": "Pag-IBIG",
     "ph_image": "PhilHealth",
     "nbi_image": "NBI Clearance",
