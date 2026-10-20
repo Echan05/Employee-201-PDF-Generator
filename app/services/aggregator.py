@@ -10,8 +10,9 @@ Call sequence (confirmed with Echan, 2026-06-24):
      they don't depend on each other, only on step 1's result. The
      company-directory lookup (added 2026-07-06) also fires here,
      concurrently with the 5 secondary calls - it only depends on
-     primary.company_name_con, already known at this point, not on
-     rm_tran_no.
+     primary.company_name_con, already known at this point, not on rm_tran_no.
+     The license PDF fetch (added 2026-10-19) also fires here - it only needs
+     erms_id, which is known from the start.
   3. Each secondary call is individually fault-tolerant (continue with
      partial data per Echan's decision) - one API failing must not
      cancel the others or fail the whole request.
@@ -63,6 +64,7 @@ ENDPOINT_EMPLOYMENT = "api_hr_201_04_employment.php"
 ENDPOINT_TRAINING = "api_hr_201_05_traning.php"
 ENDPOINT_MINOR = "api_hr_201_06_minor.php"
 COMPANY_ENDPOINT = "api_company.php"
+LICENSE_API_BASE_URL = _required_env("LICENSE_API_BASE_URL").rstrip("/")
 
 # (endpoint path, query param name, response model, friendly name for logging)
 SECONDARY_ENDPOINTS = [
@@ -219,6 +221,47 @@ async def fetch_company_directory(client: httpx.AsyncClient) -> list[CompanyReco
         return []
 
 
+async def fetch_license_pdf(client: httpx.AsyncClient, erms_id: int) -> bytes | None:
+    """Fetch the employee's latest license PDF, or None if unavailable.
+
+    Two steps: GET the license metadata JSON, then GET pdf_attachment_url.
+    Never raises - a missing or failed license must not break the 201 file.
+    No auth required (confirmed by Echan, 2026-10-19).
+    """
+    emp_id = str(erms_id)
+    try:
+        resp = await client.get(f"{LICENSE_API_BASE_URL}/api/mtc/license/{emp_id}/latest", timeout=30.0)
+        if resp.status_code == 404:
+            logger.info("No license record for employee_id=%s", emp_id)
+            return None
+        resp.raise_for_status()
+        meta = resp.json()
+        if not isinstance(meta, dict):
+            logger.warning("License API returned invalid metadata for employee_id=%s", emp_id)
+            return None
+
+        if str(meta.get("employee_id")) != emp_id:
+            logger.warning("License API returned mismatched employee_id (%s != %s)", meta.get("employee_id"), emp_id)
+            return None
+
+        pdf_url = meta.get("pdf_attachment_url")
+        if not pdf_url:
+            logger.info("License record for employee_id=%s has no pdf_attachment_url", emp_id)
+            return None
+
+        pdf_resp = await client.get(pdf_url, timeout=60.0, follow_redirects=True)
+        pdf_resp.raise_for_status()
+        content = pdf_resp.content
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
+        logger.warning("License PDF fetch failed for employee_id=%s: %s", emp_id, exc)
+        return None
+
+    if not content.startswith(b"%PDF"):
+        logger.warning("License attachment for employee_id=%s is not a valid PDF", emp_id)
+        return None
+    return content
+
+
 def match_company(company_name_con: str | None, directory: list[CompanyRecord]) -> CompanyRecord | None:
     """Match primary.company_name_con against company_name_con_x.
 
@@ -257,7 +300,7 @@ async def aggregate_employee_201(erms_id: int) -> Employee201Data:
         # fetch_section already catches its own errors internally and always
         # returns a SectionResult, never raises. fetch_company_directory follows
         # the same never-raises contract, returning [] on failure.
-        section_results, company_directory = await asyncio.gather(
+        section_results, company_directory, license_pdf = await asyncio.gather(
             asyncio.gather(
                 *[
                     fetch_section(client, endpoint, param_name, rm_tran_no, model_cls, name)
@@ -265,6 +308,7 @@ async def aggregate_employee_201(erms_id: int) -> Employee201Data:
                 ]
             ),
             fetch_company_directory(client),
+            fetch_license_pdf(client, erms_id),
         )
 
         sections = dict(zip([name for _, _, _, name in SECONDARY_ENDPOINTS], section_results))
@@ -278,4 +322,5 @@ async def aggregate_employee_201(erms_id: int) -> Employee201Data:
             training=sections["training"],
             minors=sections["minors"],
             company_match=company_match,  # requires this field added to Employee201Data - see chat note
+            license_pdf=license_pdf,
         )

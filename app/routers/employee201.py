@@ -24,6 +24,7 @@ Page order in the final PDF (changed and confirmed with Echan, 2026-10-16):
     -> Health Card Benefits page (if any; goes first when there is no contract)
     -> main template pages (page 1 + remaining page2 document images)
     -> security license / DDO pages (if any)
+    -> latest license PDF pages from the license API (if any)
 
 Why the order is assembled here: the main template always renders page 1
 first, and the contract is a raw external PDF, so contract and HCB can only
@@ -200,6 +201,19 @@ async def get_employee_201_pdf(
         # append_security_docs_if_present and skipped silently if its
         # image field is blank/missing.
         pdf_bytes = await append_security_docs_if_present(pdf_bytes, data.primary)
+
+        # Append the latest license PDF (from the license API) as the very
+        # last pages, after Security License / DDO. Skipped silently if the
+        # license API had nothing for this employee. A corrupt or encrypted
+        # license PDF must not fail the whole 201 file, so a merge failure
+        # is logged and the PDF is returned without the license pages.
+        if data.license_pdf is not None:
+            try:
+                pdf_bytes = merge_pdf_parts([pdf_bytes, data.license_pdf], title="Employee 201 File")
+            except Exception:  # noqa: BLE001 - optional pages must not break the main PDF
+                logger.warning(
+                    "Skipping license PDF for erms_id=%s: merge failed", erms_id, exc_info=True
+                )
     except Exception as exc:  # noqa: BLE001 - last line of defense, must not leak a raw 500 with no context
         logger.exception("Failed to render/generate PDF for erms_id=%s", erms_id)
         raise HTTPException(status_code=500, detail="Failed to generate PDF") from exc

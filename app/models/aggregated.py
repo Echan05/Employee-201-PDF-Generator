@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Generic, Literal, Optional, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.company import CompanyRecord
 from app.models.education import EducationRecord
@@ -45,3 +45,6 @@ class Employee201Data(BaseModel):
     training: SectionResult[TrainingRecord]
     minors: SectionResult[MinorRecord]
     company_match: CompanyRecord | None = None
+    # Raw bytes of the latest license PDF, appended after the 201 pages.
+    # exclude=True keeps multi-MB binary out of any model_dump()/JSON output.
+    license_pdf: bytes | None = Field(default=None, exclude=True)
